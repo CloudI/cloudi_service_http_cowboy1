@@ -41,7 +41,7 @@
 %%%
 %%%------------------------------------------------------------------------
 
-%% cloudi_x_cowboy handler state
+%% cowboy handler state
 -record(cowboy_state,
     {
         service,
