@@ -63,11 +63,12 @@
         websocket_protocol      :: undefined |
                                    fun((incoming | outgoing, any()) ->
                                        {incoming | any(), any()}),
+        websocket_subscriptions :: undefined | trie:trie(),
         use_websockets          :: boolean() | exclusively,
         use_host_prefix         :: boolean(),
         use_client_ip_prefix    :: boolean(),
         use_method_suffix       :: boolean(),
-        content_type_lookup     :: trie:trie(),
+        content_type_lookup     :: undefined | trie:trie(),
         websocket_state         :: tuple()
     }).
 
