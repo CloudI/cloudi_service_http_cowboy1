@@ -1099,12 +1099,17 @@ handle_request_multipart_send(PartBodyList, I, Name, Headers, HeadersPart0,
             HeadersPart1 = headers_merge(HeadersPart0, Headers),
             HeadersPartN = if
                 HeadersPartNextN =:= undefined ->
-                    [{<<"x-multipart-id">>, MultipartId},
+                    [% socket pid as a string
+                     {<<"x-multipart-id">>, MultipartId},
+                     % 0-based index
                      {<<"x-multipart-index">>, erlang:integer_to_binary(I)},
+                     % yes, this is the last part
                      {<<"x-multipart-last">>, <<"true">>} |
                      HeadersPart1];
                 true ->
-                    [{<<"x-multipart-id">>, MultipartId},
+                    [% socket pid as a string
+                     {<<"x-multipart-id">>, MultipartId},
+                     % 0-based index
                      {<<"x-multipart-index">>, erlang:integer_to_binary(I)} |
                      HeadersPart1]
             end,
