@@ -4,6 +4,7 @@ defmodule CloudIServiceHttpCowboy do
   def project do
     [app: :cloudi_service_http_cowboy,
      version: "1.4.0-rc.4",
+     language: :erlang,
      description: description,
      package: package,
      deps: deps]
