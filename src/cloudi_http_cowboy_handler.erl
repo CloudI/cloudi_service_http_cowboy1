@@ -93,7 +93,8 @@
                                        reference()}) | undefined,
         recv_timeouts :: dict_proxy(cloudi:trans_id(),
                                     reference()) | undefined,
-        queued :: pqueue4:new() | undefined
+        queued :: pqueue4:pqueue4(
+                      cloudi:message_service_request()) | undefined
     }).
 
 %%%------------------------------------------------------------------------
