@@ -3,7 +3,7 @@ defmodule CloudIServiceHttpCowboy do
 
   def project do
     [app: :cloudi_service_http_cowboy,
-     version: "1.5.0",
+     version: "1.5.1",
      language: :erlang,
      description: description,
      package: package,
@@ -11,11 +11,8 @@ defmodule CloudIServiceHttpCowboy do
   end
 
   defp deps do
-    [{:cowboy,
-      [git: "https://github.com/ninenines/cowboy.git",
-       # 1.0.0 with fixes
-       ref: "b57f94661f5fd186f55eb0fead49849e0b1399d1"]},
-     {:cloudi_core, "~> 1.5.0"}]
+    [{:cowboy, "~> 1.0.1"},
+     {:cloudi_core, "~> 1.5.1"}]
   end
 
   defp description do
@@ -24,7 +21,7 @@ defmodule CloudIServiceHttpCowboy do
 
   defp package do
     [files: ~w(src doc rebar.config README.markdown),
-     contributors: ["Michael Truog"],
+     maintainers: ["Michael Truog"],
      licenses: ["BSD"],
      links: %{"Website" => "http://cloudi.org",
               "GitHub" => "https://github.com/CloudI/" <>
