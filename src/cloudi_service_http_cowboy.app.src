@@ -3,7 +3,7 @@
 
 {application, cloudi_service_http_cowboy, 
   [{description, "cowboy HTTP CloudI Service"},
-   {vsn, "1.7.1"},
+   {vsn, "1.7.2"},
    {modules, [
         cloudi_http_cowboy_handler,
         cloudi_service_http_cowboy
