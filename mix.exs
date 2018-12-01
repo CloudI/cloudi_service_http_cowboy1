@@ -29,7 +29,7 @@ defmodule CloudIServiceHttpCowboy do
   end
 
   defp deps do
-    [{:cowboy, "~> 1.0.1"},
+    [{:cowboy, "~> 1.1.2"},
      {:cloudi_core, "~> 1.7.4"}]
   end
 
