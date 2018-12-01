@@ -28,7 +28,7 @@
 %%%------------------------------------------------------------------------
 
 %% cowboy handler state
--record(cowboy_state,
+-record(cowboy1_state,
     {
         dispatcher :: cloudi_service:dispatcher(),
         timeout_async :: cloudi_service:timeout_value_milliseconds(),

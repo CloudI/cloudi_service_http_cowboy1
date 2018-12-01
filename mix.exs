@@ -5,7 +5,7 @@ defmodule CloudIServiceHttpCowboy do
   use Mix.Project
 
   def project do
-    [app: :cloudi_service_http_cowboy,
+    [app: :cloudi_service_http_cowboy1,
      version: "1.7.4",
      language: :erlang,
      erlc_options: [
@@ -34,7 +34,7 @@ defmodule CloudIServiceHttpCowboy do
   end
 
   defp description do
-    "Erlang/Elixir Cloud Framework cowboy HTTP/HTTPS Service"
+    "Erlang/Elixir Cloud Framework cowboy 1.x HTTP/HTTPS Service"
   end
 
   defp package do
@@ -43,6 +43,6 @@ defmodule CloudIServiceHttpCowboy do
      licenses: ["MIT"],
      links: %{"Website" => "https://cloudi.org",
               "GitHub" => "https://github.com/CloudI/" <>
-                          "cloudi_service_http_cowboy"}]
+                          "cloudi_service_http_cowboy1"}]
    end
 end

@@ -33,7 +33,7 @@
 %%% @version 1.7.4 {@date} {@time}
 %%%------------------------------------------------------------------------
 
--module(cloudi_http_cowboy_handler).
+-module(cloudi_http_cowboy1_handler).
 -author('mjtruog at protonmail dot com').
 
 %-behaviour(cowboy_http_handler).
@@ -55,7 +55,7 @@
 
 -include_lib("cloudi_core/include/cloudi_logger.hrl").
 -include_lib("cloudi_core/include/cloudi_service_children.hrl").
--include("cloudi_http_cowboy_handler.hrl").
+-include("cloudi_http_cowboy1_handler.hrl").
 
 -record(websocket_state,
     {
@@ -77,7 +77,7 @@
             :: undefined | #{cloudi:trans_id() := reference()},
         queued
             :: undefined |
-               pqueue4:pqueue4(
+               cloudi_x_pqueue4:cloudi_x_pqueue4(
                    cloudi:message_service_request())
     }).
 
@@ -90,12 +90,12 @@
 %%%------------------------------------------------------------------------
 
 init(_Transport, Req0,
-     #cowboy_state{use_websockets = UseWebSockets} = State)
+     #cowboy1_state{use_websockets = UseWebSockets} = State)
     when UseWebSockets =:= true; UseWebSockets =:= exclusively ->
     case upgrade_request(Req0) of
         {websocket, Req1} ->
             {upgrade, protocol, cowboy_websocket, Req1,
-             State#cowboy_state{use_websockets = true}};
+             State#cowboy1_state{use_websockets = true}};
         {undefined, Req1} ->
             if
                 UseWebSockets =:= exclusively ->
@@ -108,11 +108,11 @@ init(_Transport, Req0,
             {shutdown, Req1, State}
     end;
 init(_Transport, Req,
-     #cowboy_state{use_websockets = false} = State) ->
+     #cowboy1_state{use_websockets = false} = State) ->
     {ok, Req, State}.
 
 handle(Req0,
-       #cowboy_state{output_type = OutputType,
+       #cowboy1_state{output_type = OutputType,
                      content_type_forced = ContentTypeForced,
                      content_types_accepted = ContentTypesAccepted,
                      set_x_forwarded_for = SetXForwardedFor,
@@ -257,7 +257,7 @@ handle(Req0,
             end,
             case handle_request(NameOutgoing, HeadersIncomingN,
                                 Body, ReqN, State) of
-                {{cowboy_response, HeadersOutgoing, Response},
+                {{cowboy1_response, HeadersOutgoing, Response},
                  ReqN0, NewState} ->
                     {HttpCode,
                      Req} = handle_response(NameIncoming, HeadersOutgoing,
@@ -268,7 +268,7 @@ handle(Req0,
                                       NameIncoming, NameOutgoing,
                                       RequestStartMicroSec]),
                     {ok, Req, NewState};
-                {{cowboy_error, timeout},
+                {{cowboy1_error, timeout},
                  ReqN0, NewState} ->
                     HttpCode = StatusCodeTimeout,
                     {ok, Req} = if
@@ -289,7 +289,7 @@ handle(Req0,
                                      NameIncoming, NameOutgoing,
                                      RequestStartMicroSec, timeout]),
                     {ok, Req, NewState};
-                {{cowboy_error, Reason},
+                {{cowboy1_error, Reason},
                  ReqN0, NewState} ->
                     HttpCode = 500,
                     {ok, Req} = cowboy_req:reply(HttpCode,
@@ -310,7 +310,7 @@ terminate(_Reason, _Req, _State) ->
     ok.
 
 websocket_init(_Transport, Req0,
-               #cowboy_state{scope = Scope,
+               #cowboy1_state{scope = Scope,
                              prefix = Prefix,
                              timeout_websocket = TimeoutWebSocket,
                              output_type = OutputType,
@@ -404,7 +404,7 @@ websocket_init(_Transport, Req0,
     end,
     Queued = if
         WebSocketProtocol =:= undefined ->
-            pqueue4:new();
+            cloudi_x_pqueue4:new();
         true ->
             undefined
     end,
@@ -413,11 +413,11 @@ websocket_init(_Transport, Req0,
             % initiate an asynchronous close if the websocket must be unique
             OldConnectionMonitors = if
                 WebSocketNameUnique =:= true ->
-                    case cpg:get_members(Scope, NameWebSocket,
+                    case cloudi_x_cpg:get_members(Scope, NameWebSocket,
                                                   infinity) of
                         {ok, _, OldConnections} ->
                             lists:map(fun(OldConnection) ->
-                                cloudi_service_http_cowboy:close(OldConnection),
+                                cloudi_service_http_cowboy1:close(OldConnection),
                                 erlang:monitor(process, OldConnection)
                             end, OldConnections);
                         {error, _} ->
@@ -428,7 +428,7 @@ websocket_init(_Transport, Req0,
             end,
             % service requests are only received if they relate to
             % the service's prefix
-            ok = cpg:join(Scope, NameWebSocket, self(), infinity),
+            ok = cloudi_x_cpg:join(Scope, NameWebSocket, self(), infinity),
             % block on the websocket close if the connection must be unique
             if
                 WebSocketNameUnique =:= true ->
@@ -465,7 +465,7 @@ websocket_init(_Transport, Req0,
     end,
     {ok, ReqN,
      websocket_connect_check(WebSocketConnect,
-                             State#cowboy_state{
+                             State#cowboy1_state{
                                  websocket_ping = WebSocketPingStatus,
                                  websocket_subscriptions = undefined,
                                  websocket_state = #websocket_state{
@@ -477,14 +477,14 @@ websocket_init(_Transport, Req0,
                                      queued = Queued}}), TimeoutWebSocket}.
 
 websocket_handle({ping, _Payload}, Req, State) ->
-    % cowboy automatically responds with pong
+    % cowboy1 automatically responds with pong
     {ok, Req, State};
 
 websocket_handle({pong, _Payload}, Req, State) ->
-    {ok, Req, State#cowboy_state{websocket_ping = received}};
+    {ok, Req, State#cowboy1_state{websocket_ping = received}};
 
 websocket_handle({WebSocketResponseType, ResponseBinary}, Req,
-                 #cowboy_state{output_type = OutputType,
+                 #cowboy1_state{output_type = OutputType,
                                websocket_protocol = undefined,
                                use_websockets = true,
                                websocket_state = #websocket_state{
@@ -506,7 +506,7 @@ websocket_handle({WebSocketResponseType, ResponseBinary}, Req,
     websocket_handle_outgoing_response(T, ResponseTimer,
                                        ResponseInfo, Response),
     websocket_process_queue(Req,
-                            State#cowboy_state{websocket_state =
+                            State#cowboy1_state{websocket_state =
                                 WebSocketState#websocket_state{
                                     response_pending = false,
                                     response_timer = undefined,
@@ -514,7 +514,7 @@ websocket_handle({WebSocketResponseType, ResponseBinary}, Req,
                                 });
 
 websocket_handle({WebSocketRequestType, RequestBinary}, Req,
-                 #cowboy_state{dispatcher = Dispatcher,
+                 #cowboy1_state{dispatcher = Dispatcher,
                                timeout_sync = TimeoutSync,
                                output_type = OutputType,
                                websocket_protocol = undefined,
@@ -551,7 +551,7 @@ websocket_handle({WebSocketRequestType, RequestBinary}, Req,
                                       NameIncoming, State);
 
 websocket_handle({WebSocketRequestType, RequestBinary}, Req,
-                 #cowboy_state{dispatcher = Dispatcher,
+                 #cowboy1_state{dispatcher = Dispatcher,
                                timeout_sync = TimeoutSync,
                                websocket_protocol = WebSocketProtocol,
                                use_websockets = true,
@@ -597,33 +597,33 @@ websocket_handle({WebSocketRequestType, RequestBinary}, Req,
             websocket_handle_outgoing_response(T, ResponseTimer,
                                                Info, Value),
             {ok, Req,
-             State#cowboy_state{websocket_state =
+             State#cowboy1_state{websocket_state =
                  WebSocketState#websocket_state{
                      response_lookup = maps:remove(LookupID, ResponseLookup)}
                  }}
     end.
 
 websocket_info({response_timeout, ID}, Req,
-               #cowboy_state{use_websockets = true,
+               #cowboy1_state{use_websockets = true,
                              websocket_state = #websocket_state{
                                  response_pending = false,
                                  response_lookup = ResponseLookup
                                  } = WebSocketState
                              } = State) ->
     {ok, Req,
-     State#cowboy_state{websocket_state =
+     State#cowboy1_state{websocket_state =
          WebSocketState#websocket_state{
              response_lookup = maps:remove(ID, ResponseLookup)}
          }};
 
 websocket_info(response_timeout, Req,
-               #cowboy_state{websocket_protocol = undefined,
+               #cowboy1_state{websocket_protocol = undefined,
                              use_websockets = true,
                              websocket_state = #websocket_state{
                                  response_pending = true} = WebSocketState
                              } = State) ->
     websocket_process_queue(Req,
-                            State#cowboy_state{websocket_state =
+                            State#cowboy1_state{websocket_state =
                                 WebSocketState#websocket_state{
                                     response_pending = false,
                                     response_timer = undefined,
@@ -632,7 +632,7 @@ websocket_info(response_timeout, Req,
 
 websocket_info({Type, Name, Pattern, RequestInfo, Request,
                 Timeout, Priority, TransId, Source}, Req,
-               #cowboy_state{output_type = OutputType,
+               #cowboy1_state{output_type = OutputType,
                              websocket_output_type = WebSocketOutputType,
                              websocket_protocol = undefined,
                              use_websockets = true,
@@ -651,7 +651,7 @@ websocket_info({Type, Name, Pattern, RequestInfo, Request,
     ResponseTimer = erlang:send_after(Timeout, self(), response_timeout),
     T = {Type, Name, Pattern, undefined, undefined,
          Timeout, Priority, TransId, Source},
-    NewState = State#cowboy_state{
+    NewState = State#cowboy1_state{
         websocket_state = WebSocketState#websocket_state{
             response_pending = true,
             response_timer = ResponseTimer,
@@ -667,7 +667,7 @@ websocket_info({Type, Name, Pattern, RequestInfo, Request,
 
 websocket_info({Type, Name, Pattern, RequestInfo, RequestProtocol,
                 Timeout, Priority, TransId, Source}, Req,
-               #cowboy_state{websocket_output_type = WebSocketOutputType,
+               #cowboy1_state{websocket_output_type = WebSocketOutputType,
                              websocket_protocol = WebSocketProtocol,
                              use_websockets = true,
                              websocket_state = #websocket_state{
@@ -683,7 +683,7 @@ websocket_info({Type, Name, Pattern, RequestInfo, RequestProtocol,
     ResponseTimer = erlang:send_after(Timeout, self(),
                                       {response_timeout, ID}),
     NewResponseLookup = maps:put(ID, {T, ResponseTimer}, ResponseLookup),
-    NewState = State#cowboy_state{
+    NewState = State#cowboy1_state{
         websocket_state = WebSocketState#websocket_state{
             response_lookup = NewResponseLookup}},
     case websocket_terminate_check(RequestInfo) of
@@ -697,7 +697,7 @@ websocket_info({Type, Name, Pattern, RequestInfo, RequestProtocol,
 
 websocket_info({Type, _, _, _, Request,
                 Timeout, Priority, TransId, _} = T, Req,
-               #cowboy_state{output_type = OutputType,
+               #cowboy1_state{output_type = OutputType,
                              websocket_protocol = undefined,
                              use_websockets = true,
                              websocket_state = #websocket_state{
@@ -717,18 +717,18 @@ websocket_info({Type, _, _, _, Request,
           Type =:= 'cloudi_service_send_sync'),
          (Timeout > 0) ->
     {ok, Req,
-     State#cowboy_state{
+     State#cowboy1_state{
          websocket_state = WebSocketState#websocket_state{
              recv_timeouts = maps:put(TransId,
                  erlang:send_after(Timeout, self(),
                      {'cloudi_service_recv_timeout', Priority, TransId}),
                  RecvTimeouts),
-             queued = pqueue4:in(T, Priority, Queue)}
+             queued = cloudi_x_pqueue4:in(T, Priority, Queue)}
          }};
 
 websocket_info({Type, Name, _, _, _,
                 Timeout, _, TransId, _}, Req,
-               #cowboy_state{output_type = OutputType,
+               #cowboy1_state{output_type = OutputType,
                              websocket_protocol = undefined,
                              use_websockets = true} = State)
     when Type =:= 'cloudi_service_send_async';
@@ -744,7 +744,7 @@ websocket_info({Type, Name, _, _, _,
     {ok, Req, State};
 
 websocket_info({'cloudi_service_recv_timeout', Priority, TransId}, Req,
-               #cowboy_state{websocket_protocol = undefined,
+               #cowboy1_state{websocket_protocol = undefined,
                              use_websockets = true,
                              websocket_state = #websocket_state{
                                  recv_timeouts = RecvTimeouts,
@@ -752,9 +752,9 @@ websocket_info({'cloudi_service_recv_timeout', Priority, TransId}, Req,
                                  } = WebSocketState
                              } = State) ->
     F = fun({_, {_, _, _, _, _, _, _, Id, _}}) -> Id == TransId end,
-    {_, NewQueue} = pqueue4:remove_unique(F, Priority, Queue),
+    {_, NewQueue} = cloudi_x_pqueue4:remove_unique(F, Priority, Queue),
     {ok, Req,
-     State#cowboy_state{
+     State#cowboy1_state{
          websocket_state = WebSocketState#websocket_state{
              recv_timeouts = maps:remove(TransId, RecvTimeouts),
              queued = NewQueue}
@@ -762,20 +762,20 @@ websocket_info({'cloudi_service_recv_timeout', Priority, TransId}, Req,
 
 websocket_info({'cloudi_service_return_async',
                 _, _, <<>>, <<>>, _, TransId, _}, Req,
-               #cowboy_state{use_websockets = true,
+               #cowboy1_state{use_websockets = true,
                              websocket_state = #websocket_state{
                                  websocket_connect_trans_id = TransId
                                  } = WebSocketState
                              } = State) ->
     {ok, Req,
-     State#cowboy_state{
+     State#cowboy1_state{
          websocket_state = WebSocketState#websocket_state{
              websocket_connect_trans_id = undefined}
          }};
 
 websocket_info({'cloudi_service_return_async',
                 _, _, ResponseInfo, Response, _, TransId, _}, Req,
-               #cowboy_state{output_type = OutputType,
+               #cowboy1_state{output_type = OutputType,
                              websocket_output_type = WebSocketOutputType,
                              websocket_protocol = WebSocketProtocol,
                              use_websockets = true,
@@ -803,7 +803,7 @@ websocket_info({'cloudi_service_return_async',
             {_, ResponseBinary} = WebSocketProtocol(outgoing, Response),
             {WebSocketOutputType, ResponseBinary}
     end,
-    NewState = State#cowboy_state{
+    NewState = State#cowboy1_state{
                    websocket_state = WebSocketState#websocket_state{
                        websocket_connect_trans_id = undefined}},
     case websocket_terminate_check(ResponseInfo) of
@@ -824,7 +824,7 @@ websocket_info({'cloudi_service_return_async',
     end;
 
 websocket_info({websocket_ping, WebSocketPing}, Req,
-               #cowboy_state{websocket_ping = WebSocketPingStatus} = State) ->
+               #cowboy1_state{websocket_ping = WebSocketPingStatus} = State) ->
     if
         WebSocketPingStatus =:= undefined ->
             {shutdown, Req, State};
@@ -832,20 +832,20 @@ websocket_info({websocket_ping, WebSocketPing}, Req,
             erlang:send_after(WebSocketPing, self(),
                               {websocket_ping, WebSocketPing}),
             {reply, {ping, <<>>}, Req,
-             State#cowboy_state{websocket_ping = undefined}}
+             State#cowboy1_state{websocket_ping = undefined}}
     end;
 
-websocket_info({cowboy_error, shutdown}, Req, State) ->
-    % from cloudi_service_http_cowboy:close/1
+websocket_info({cowboy1_error, shutdown}, Req, State) ->
+    % from cloudi_service_http_cowboy1:close/1
     {shutdown, Req, State};
 
 websocket_info(Info, Req,
-               #cowboy_state{use_websockets = true} = State) ->
+               #cowboy1_state{use_websockets = true} = State) ->
     ?LOG_ERROR("Invalid websocket request state: \"~p\"", [Info]),
     {ok, Req, State}.
 
 websocket_terminate(Reason, _Req,
-                    #cowboy_state{
+                    #cowboy1_state{
                         websocket_disconnect = WebSocketDisconnect} = State) ->
     websocket_disconnect_check(WebSocketDisconnect, Reason, State),
     ok.
@@ -913,7 +913,7 @@ headers_external_outgoing([] = ResponseInfo) ->
     ResponseInfo;
 headers_external_outgoing([{_, _} | _] = ResponseInfo) ->
     % assumes key/value within tuple are iodata()
-    % (cowboy can error if this is not true)
+    % (cowboy1 can error if this is not true)
     ResponseInfo;
 headers_external_outgoing(ResponseInfo)
     when is_binary(ResponseInfo) ->
@@ -987,7 +987,7 @@ websocket_request_end(Name, NewTimeout, OldTimeout) ->
     ?LOG_TRACE("~s ~p ms", [Name, OldTimeout - NewTimeout]).
 
 handle_request(Name, Headers, 'normal', Req,
-               #cowboy_state{
+               #cowboy1_state{
                    timeout_body = TimeoutBody,
                    length_body_read = LengthBodyRead,
                    length_body_chunk = LengthBodyChunk} = State) ->
@@ -997,7 +997,7 @@ handle_request(Name, Headers, 'normal', Req,
     {ok, Body, NextReq} = handle_request_body(Req, BodyOpts),
     handle_request(Name, Headers, Body, NextReq, State);
 handle_request(Name, Headers, 'application_zip', Req,
-               #cowboy_state{
+               #cowboy1_state{
                    timeout_body = TimeoutBody,
                    length_body_read = LengthBodyRead,
                    length_body_chunk = LengthBodyChunk} = State) ->
@@ -1007,7 +1007,7 @@ handle_request(Name, Headers, 'application_zip', Req,
     {ok, Body, NextReq} = handle_request_body(Req, BodyOpts),
     handle_request(Name, Headers, zlib:unzip(Body), NextReq, State);
 handle_request(Name, Headers, 'multipart', Req,
-               #cowboy_state{
+               #cowboy1_state{
                    dispatcher = Dispatcher,
                    timeout_async = TimeoutAsync,
                    timeout_part_header = TimeoutPartHeader,
@@ -1038,10 +1038,10 @@ handle_request(Name, Headers, 'multipart', Req,
                                      PartHeaderOpts, PartBodyOpts,
                                      MultipartId, Req, State);
         {error, timeout} ->
-            {{cowboy_error, timeout}, Req, State}
+            {{cowboy1_error, timeout}, Req, State}
     end;
 handle_request(Name, Headers, Body, Req,
-               #cowboy_state{
+               #cowboy1_state{
                    dispatcher = Dispatcher,
                    timeout_sync = TimeoutSync,
                    output_type = OutputType} = State) ->
@@ -1062,9 +1062,9 @@ handle_request(Name, Headers, Body, Req,
                            TimeoutSync, self()) of
         {ok, ResponseInfo, Response} ->
             HeadersOutgoing = headers_external_outgoing(ResponseInfo),
-            {{cowboy_response, HeadersOutgoing, Response}, Req, State};
+            {{cowboy1_response, HeadersOutgoing, Response}, Req, State};
         {error, timeout} ->
-            {{cowboy_error, timeout}, Req, State}
+            {{cowboy1_error, timeout}, Req, State}
     end.
 
 handle_request_body(Req, BodyOpts) ->
@@ -1072,7 +1072,7 @@ handle_request_body(Req, BodyOpts) ->
         {ok, _, _} = Success ->
             Success;
         {error, Reason} ->
-            erlang:exit({cowboy_error, Reason})
+            erlang:exit({cowboy1_error, Reason})
     end.
 
 handle_request_multipart(Name, Headers,
@@ -1085,7 +1085,7 @@ handle_request_multipart(Name, Headers,
                                      PartHeaderOpts, PartBodyOpts,
                                      MultipartId, ReqN, State);
         {done, ReqN} ->
-            {{cowboy_error, multipart_empty}, ReqN, State}
+            {{cowboy1_error, multipart_empty}, ReqN, State}
     end.
 
 handle_request_multipart(TransIdList, I, Name, Headers, HeadersPart,
@@ -1115,7 +1115,7 @@ headers_merge(HeadersPart, Headers) ->
 handle_request_multipart_send(PartBodyList, I, Name, Headers, HeadersPart0,
                               Destination, Self, PartHeaderOpts, PartBodyOpts,
                               MultipartId, Req0,
-                              #cowboy_state{
+                              #cowboy1_state{
                                   dispatcher = Dispatcher,
                                   timeout_async = TimeoutAsync,
                                   output_type = OutputType} = State) ->
@@ -1203,7 +1203,7 @@ handle_request_multipart_receive_results([{ResponseInfo, Response, _} |
     if
         (Status >= 200) andalso (Status =< 299) ->
             handle_request_multipart_receive_results(ResponseList,
-                                                     [{cowboy_response,
+                                                     [{cowboy1_response,
                                                        HeadersOutgoing,
                                                        Response} |
                                                       SuccessList],
@@ -1212,7 +1212,7 @@ handle_request_multipart_receive_results([{ResponseInfo, Response, _} |
         true ->
             handle_request_multipart_receive_results(ResponseList,
                                                      SuccessList,
-                                                     [{cowboy_response,
+                                                     [{cowboy1_response,
                                                        HeadersOutgoing,
                                                        Response} |
                                                       ErrorList],
@@ -1220,14 +1220,14 @@ handle_request_multipart_receive_results([{ResponseInfo, Response, _} |
     end.
 
 handle_request_multipart_receive([_ | _] = TransIdList, Req,
-                                 #cowboy_state{
+                                 #cowboy1_state{
                                      timeout_sync = TimeoutSync} = State) ->
     case recv_asyncs_minimal(TimeoutSync, TransIdList) of
         {ok, ResponseList} ->
             handle_request_multipart_receive_results(ResponseList,
                                                      [], [], Req, State);
         {error, timeout} ->
-            {{cowboy_error, timeout}, Req, State}
+            {{cowboy1_error, timeout}, Req, State}
     end.
 
 handle_response(NameIncoming, HeadersOutgoing0, Response,
@@ -1342,7 +1342,7 @@ websocket_connect_request(OutputType)
 websocket_connect_check(undefined, State) ->
     State;
 websocket_connect_check({async, WebSocketConnectName},
-                        #cowboy_state{
+                        #cowboy1_state{
                             dispatcher = Dispatcher,
                             timeout_async = TimeoutAsync,
                             output_type = OutputType,
@@ -1353,14 +1353,14 @@ websocket_connect_check({async, WebSocketConnectName},
     case send_async_minimal(Dispatcher, WebSocketConnectName,
                             RequestInfo, Request, TimeoutAsync, self()) of
         {ok, TransId} ->
-            State#cowboy_state{
+            State#cowboy1_state{
                 websocket_state = WebSocketState#websocket_state{
                     websocket_connect_trans_id = TransId}};
         {error, timeout} ->
             State
     end;
 websocket_connect_check({sync, WebSocketConnectName},
-                        #cowboy_state{
+                        #cowboy1_state{
                             dispatcher = Dispatcher,
                             timeout_sync = TimeoutSync,
                             output_type = OutputType,
@@ -1380,7 +1380,7 @@ websocket_connect_check({sync, WebSocketConnectName},
                             WebSocketConnectName,
                             ResponseInfo, Response,
                             TimeoutSync, TransId, Self},
-                    State#cowboy_state{
+                    State#cowboy1_state{
                         websocket_state = WebSocketState#websocket_state{
                             websocket_connect_trans_id = TransId}};
                 {error, timeout} ->
@@ -1420,7 +1420,7 @@ websocket_disconnect_request_info(Reason, RequestInfo, OutputType)
 websocket_disconnect_check(undefined, _, _) ->
     ok;
 websocket_disconnect_check({async, WebSocketDisconnectName}, Reason,
-                           #cowboy_state{
+                           #cowboy1_state{
                                dispatcher = Dispatcher,
                                timeout_async = TimeoutAsync,
                                output_type = OutputType,
@@ -1434,7 +1434,7 @@ websocket_disconnect_check({async, WebSocketDisconnectName}, Reason,
                        TimeoutAsync, self()),
     ok;
 websocket_disconnect_check({sync, WebSocketDisconnectName}, Reason,
-                           #cowboy_state{
+                           #cowboy1_state{
                                dispatcher = Dispatcher,
                                timeout_sync = TimeoutSync,
                                output_type = OutputType,
@@ -1453,7 +1453,7 @@ websocket_subscriptions([], _, _) ->
 websocket_subscriptions([F | Functions], Parameters, Scope) ->
     case F(Parameters) of
         {ok, NameWebSocket} ->
-            ok = cpg:join(Scope, NameWebSocket, self(), infinity);
+            ok = cloudi_x_cpg:join(Scope, NameWebSocket, self(), infinity);
         {error, _} ->
             ok
     end,
@@ -1511,15 +1511,15 @@ websocket_handle_outgoing_response({SendType,
                      [Name, Timeout, OldTimeout]).
 
 websocket_process_queue(Req,
-                        #cowboy_state{websocket_state =
+                        #cowboy1_state{websocket_state =
                             #websocket_state{
                                 response_pending = false,
                                 recv_timeouts = RecvTimeouts,
                                 queued = Queue} = WebSocketState} = State) ->
-    case pqueue4:out(Queue) of
+    case cloudi_x_pqueue4:out(Queue) of
         {empty, NewQueue} ->
             {ok, Req,
-             State#cowboy_state{websocket_state =
+             State#cowboy1_state{websocket_state =
                  WebSocketState#websocket_state{queued = NewQueue}}};
         {{value, {Type, Name, Pattern, RequestInfo, Request,
                   _, Priority, TransId, Pid}}, NewQueue} ->
@@ -1532,7 +1532,7 @@ websocket_process_queue(Req,
             end,
             websocket_info({Type, Name, Pattern, RequestInfo, Request,
                             Timeout, Priority, TransId, Pid}, Req,
-                           State#cowboy_state{websocket_state =
+                           State#cowboy1_state{websocket_state =
                                WebSocketState#websocket_state{
                                    recv_timeouts = maps:remove(TransId,
                                                                RecvTimeouts),

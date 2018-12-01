@@ -34,7 +34,7 @@
 %%% @version 1.7.4 {@date} {@time}
 %%%------------------------------------------------------------------------
 
--module(cloudi_service_http_cowboy).
+-module(cloudi_service_http_cowboy1).
 -author('mjtruog at protonmail dot com').
 
 -behaviour(cloudi_service).
@@ -50,7 +50,7 @@
 
 -include_lib("cloudi_core/include/cloudi_logger.hrl").
 -include_lib("cloudi_core/include/cloudi_service_children.hrl").
--include("cloudi_http_cowboy_handler.hrl").
+-include("cloudi_http_cowboy1_handler.hrl").
 
 -define(DEFAULT_IP,                         {127,0,0,1}). % interface ip address
 -define(DEFAULT_PORT,                              8080).
@@ -175,7 +175,7 @@
     {
         listener :: pid(),
         service :: pid(),
-        handler_state :: #cowboy_state{}
+        handler_state :: #cowboy1_state{}
     }).
 
 %%%------------------------------------------------------------------------
@@ -184,7 +184,7 @@
 
 %%-------------------------------------------------------------------------
 %% @doc
-%% ===Close a cowboy websocket connection.===
+%% ===Close a cowboy1 websocket connection.===
 %% Use the Pid from cloudi_service_handle_request/11.  Otherwise, you can
 %% use either the get_pid function or get_pids function in the cloudi module
 %% (or the cloudi_service module) to find a match for the connection URL.
@@ -196,11 +196,11 @@
 
 close(Pid)
     when is_pid(Pid) ->
-    Pid ! {cowboy_error, shutdown},
+    Pid ! {cowboy1_error, shutdown},
     ok;
 close({Pattern, Pid})
     when is_list(Pattern), is_pid(Pid) ->
-    Pid ! {cowboy_error, shutdown},
+    Pid ! {cowboy1_error, shutdown},
     ok.
 
 %%%------------------------------------------------------------------------
@@ -403,7 +403,7 @@ cloudi_service_init(Args, Prefix, _Timeout, Dispatcher) ->
     false = lists:member($*, Prefix),
     {_, Scope} = lists:keyfind(groups_scope, 1,
                                cloudi_service:context_options(Dispatcher)),
-    HandlerState = #cowboy_state{
+    HandlerState = #cowboy1_state{
         dispatcher = cloudi_service:dispatcher(Dispatcher),
         timeout_async = cloudi_service:timeout_async(Dispatcher),
         timeout_sync = cloudi_service:timeout_sync(Dispatcher),
@@ -471,7 +471,7 @@ cloudi_service_init(Args, Prefix, _Timeout, Dispatcher) ->
                  {max_connections, MaxConnections},
                  {certfile, CertFile}] ++
                 NewSSLOpts, % Transport options
-                [{env, [{dispatch, cowboy_dispatch(HandlerState)}]},
+                [{env, [{dispatch, cowboy1_dispatch(HandlerState)}]},
                  {compress, Compress},
                  {max_empty_lines, MaxEmptyLines},
                  {max_header_name_length, MaxHeaderNameLength},
@@ -490,7 +490,7 @@ cloudi_service_init(Args, Prefix, _Timeout, Dispatcher) ->
                  {backlog, Backlog},
                  {nodelay, NoDelay},
                  {max_connections, MaxConnections}], % Transport options
-                [{env, [{dispatch, cowboy_dispatch(HandlerState)}]},
+                [{env, [{dispatch, cowboy1_dispatch(HandlerState)}]},
                  {compress, Compress},
                  {max_empty_lines, MaxEmptyLines},
                  {max_header_name_length, MaxHeaderNameLength},
@@ -515,10 +515,10 @@ cloudi_service_handle_info({update, UpdateDelaySeconds},
                                   handler_state = HandlerState} = State,
                            Dispatcher) ->
     % The timeout_async and timeout_sync service configuration values
-    % need to be updated within the cowboy_state record used for new
+    % need to be updated within the cowboy1_state record used for new
     % connection processes, after an update has occurred using the
     % CloudI Service API function services_update
-    #cowboy_state{timeout_async = TimeoutAsync,
+    #cowboy1_state{timeout_async = TimeoutAsync,
                   timeout_sync = TimeoutSync} = HandlerState,
     ContextOptions = cloudi_service:context_options(Dispatcher),
     {_, TimeoutAsyncCurrent} = lists:keyfind(timeout_async, 1, ContextOptions),
@@ -528,12 +528,12 @@ cloudi_service_handle_info({update, UpdateDelaySeconds},
         TimeoutSync == TimeoutSyncCurrent ->
             HandlerState;
         true ->
-            NextHandlerState = HandlerState#cowboy_state{
+            NextHandlerState = HandlerState#cowboy1_state{
                 timeout_async = TimeoutAsyncCurrent,
                 timeout_sync = TimeoutSyncCurrent},
             ok = cowboy:set_env(Service,
                                          dispatch,
-                                         cowboy_dispatch(NextHandlerState)),
+                                         cowboy1_dispatch(NextHandlerState)),
             NextHandlerState
     end,
     erlang:send_after(UpdateDelaySeconds * 1000, Service,
@@ -557,10 +557,10 @@ cloudi_service_terminate(_Reason, _Timeout,
 %%% Private functions
 %%%------------------------------------------------------------------------
 
-cowboy_dispatch(HandlerState) ->
+cowboy1_dispatch(HandlerState) ->
     cowboy_router:compile([
         %% {Host, list({Path, Handler, Opts})}
-        {'_', [{'_', cloudi_http_cowboy_handler, HandlerState}]}
+        {'_', [{'_', cloudi_http_cowboy1_handler, HandlerState}]}
     ]).
 
 websocket_subscriptions_lookup([], Lookup, _) ->
