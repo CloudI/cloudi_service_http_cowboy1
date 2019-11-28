@@ -13,9 +13,9 @@
 <ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
    <h3><a name="CloudI_HTTP_Integration">CloudI HTTP Integration</a></h3>
    Uses the cowboy Erlang HTTP Server.
-<p>Copyright © 2012-2018 Michael Truog</p>
+<p>Copyright © 2012-2019 Michael Truog</p>
 
-<p><b>Version:</b> 1.7.5 Dec 17 2018 20:48:17
+<p><b>Version:</b> 1.8.0 Nov 28 2019 14:47:13
   ------------------------------------------------------------------------</p>
 <p><b>Behaviours:</b> <a href="deps/cloudi_core/doc/cloudi_service.html"><tt>cloudi_service</tt></a>.</p>
 <p><b>Authors:</b> Michael Truog (<a href="mailto:mjtruog at protonmail dot com"><tt>mjtruog at protonmail dot com</tt></a>).</p>
@@ -28,7 +28,6 @@
   <h4><a name="Close_a_cowboy1_websocket_connection.">Close a cowboy1 websocket connection.</a></h4>
   Use the Pid from cloudi_service_handle_request/11.</td></tr>
 <tr><td valign="top"><a href="#cloudi_service_handle_info-3">cloudi_service_handle_info/3</a></td><td></td></tr>
-<tr><td valign="top"><a href="#cloudi_service_handle_request-11">cloudi_service_handle_request/11</a></td><td></td></tr>
 <tr><td valign="top"><a href="#cloudi_service_init-4">cloudi_service_init/4</a></td><td></td></tr>
 <tr><td valign="top"><a href="#cloudi_service_terminate-3">cloudi_service_terminate/3</a></td><td></td></tr>
 </table>
@@ -47,11 +46,6 @@
 <h3 class="function"><a name="cloudi_service_handle_info-3">cloudi_service_handle_info/3</a></h3>
 <div class="spec">
 <p><tt>cloudi_service_handle_info(Request, State, Dispatcher) -&gt; any()</tt></p>
-</div>
-
-<h3 class="function"><a name="cloudi_service_handle_request-11">cloudi_service_handle_request/11</a></h3>
-<div class="spec">
-<p><tt>cloudi_service_handle_request(Type, Name, Pattern, RequestInfo, Request, Timeout, Priority, TransId, Pid, State, Dispatcher) -&gt; any()</tt></p>
 </div>
 
 <h3 class="function"><a name="cloudi_service_init-4">cloudi_service_init/4</a></h3>
