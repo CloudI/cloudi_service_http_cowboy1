@@ -4,7 +4,7 @@
 %%%------------------------------------------------------------------------
 %%% @doc
 %%% ==CloudI HTTP Integration==
-%%% Uses the cowboy Erlang HTTP Server.
+%%% Uses the cowboy1 Erlang HTTP Server.
 %%% @end
 %%%
 %%% MIT License

@@ -36,18 +36,18 @@
 -module(cloudi_http_cowboy1_handler).
 -author('mjtruog at protonmail dot com').
 
-%-behaviour(cowboy_http_handler).
-%-behaviour(cowboy_websocket_handler).
+%-behaviour(cowboy1_http_handler).
+%-behaviour(cowboy1_websocket_handler).
 
 %% external interface
 
-%% cowboy_http_handler callbacks
+%% cowboy1_http_handler callbacks
 -export([init/3,
          handle/2,
          info/3,
          terminate/3]).
 
-%% cowboy_websocket_handler callbacks
+%% cowboy1_websocket_handler callbacks
 -export([websocket_init/3,
          websocket_handle/3,
          websocket_info/3,
@@ -77,7 +77,7 @@
             :: undefined | #{cloudi:trans_id() := reference()},
         queued
             :: undefined |
-               cloudi_x_pqueue4:cloudi_x_pqueue4(
+               pqueue4:pqueue4(
                    cloudi:message_service_request())
     }).
 
@@ -86,7 +86,7 @@
 %%%------------------------------------------------------------------------
 
 %%%------------------------------------------------------------------------
-%%% Callback functions from cowboy_http_handler
+%%% Callback functions from cowboy1_http_handler
 %%%------------------------------------------------------------------------
 
 init(_Transport, Req0,
@@ -403,7 +403,7 @@ websocket_init(_Transport, Req0,
     end,
     Queued = if
         WebSocketProtocol =:= undefined ->
-            cloudi_x_pqueue4:new();
+            pqueue4:new();
         true ->
             undefined
     end,
@@ -412,7 +412,7 @@ websocket_init(_Transport, Req0,
             % initiate an asynchronous close if the websocket must be unique
             OldConnectionMonitors = if
                 WebSocketNameUnique =:= true ->
-                    case cloudi_x_cpg:get_members(Scope, NameWebSocket,
+                    case cpg:get_members(Scope, NameWebSocket,
                                                   infinity) of
                         {ok, _, OldConnections} ->
                             lists:map(fun(OldConnection) ->
@@ -427,7 +427,7 @@ websocket_init(_Transport, Req0,
             end,
             % service requests are only received if they relate to
             % the service's prefix
-            ok = cloudi_x_cpg:join(Scope, NameWebSocket, self(), infinity),
+            ok = cpg:join(Scope, NameWebSocket, self(), infinity),
             % block on the websocket close if the connection must be unique
             if
                 WebSocketNameUnique =:= true ->
@@ -722,7 +722,7 @@ websocket_info({Type, _, _, _, Request,
                  erlang:send_after(Timeout, self(),
                      {'cloudi_service_recv_timeout', Priority, TransId}),
                  RecvTimeouts),
-             queued = cloudi_x_pqueue4:in(T, Priority, Queue)}
+             queued = pqueue4:in(T, Priority, Queue)}
          }};
 
 websocket_info({Type, Name, _, _, _,
@@ -751,7 +751,7 @@ websocket_info({'cloudi_service_recv_timeout', Priority, TransId}, Req,
                                  } = WebSocketState
                              } = State) ->
     F = fun({_, {_, _, _, _, _, _, _, Id, _}}) -> Id == TransId end,
-    {_, NewQueue} = cloudi_x_pqueue4:remove_unique(F, Priority, Queue),
+    {_, NewQueue} = pqueue4:remove_unique(F, Priority, Queue),
     {ok, Req,
      State#cowboy1_state{
          websocket_state = WebSocketState#websocket_state{
@@ -1428,7 +1428,7 @@ websocket_subscriptions([], _, _) ->
 websocket_subscriptions([F | Functions], Parameters, Scope) ->
     case F(Parameters) of
         {ok, NameWebSocket} ->
-            ok = cloudi_x_cpg:join(Scope, NameWebSocket, self(), infinity);
+            ok = cpg:join(Scope, NameWebSocket, self(), infinity);
         {error, _} ->
             ok
     end,
@@ -1491,7 +1491,7 @@ websocket_process_queue(Req,
                                 response_pending = false,
                                 recv_timeouts = RecvTimeouts,
                                 queued = Queue} = WebSocketState} = State) ->
-    case cloudi_x_pqueue4:out(Queue) of
+    case pqueue4:out(Queue) of
         {empty, NewQueue} ->
             {ok, Req,
              State#cowboy1_state{websocket_state =

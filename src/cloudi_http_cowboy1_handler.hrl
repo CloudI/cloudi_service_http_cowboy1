@@ -27,7 +27,7 @@
 %%%
 %%%------------------------------------------------------------------------
 
-%% cowboy handler state
+%% cowboy1 handler state
 -record(cowboy1_state,
     {
         dispatcher :: cloudi_service:dispatcher(),
