@@ -13,9 +13,9 @@
 <ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
    <h3><a name="CloudI_HTTP_Integration">CloudI HTTP Integration</a></h3>
    Uses the cowboy1 Erlang HTTP Server.
-<p>Copyright © 2012-2020 Michael Truog</p>
+<p>Copyright © 2012-2021 Michael Truog</p>
 
-<p><b>Version:</b> 2.0.1 Nov 26 2020 18:23:52
+<p><b>Version:</b> 2.0.2 May 27 2021 00:21:32
   ------------------------------------------------------------------------</p>
 <p><b>Behaviours:</b> <a href="deps/cloudi_core/doc/cloudi_service.html"><tt>cloudi_service</tt></a>.</p>
 <p><b>Authors:</b> Michael Truog (<a href="mailto:mjtruog at protonmail dot com"><tt>mjtruog at protonmail dot com</tt></a>).</p>
@@ -37,6 +37,7 @@
 <h3 class="function"><a name="close-1">close/1</a></h3>
 <div class="spec">
 <p><tt>close(Pid::pid() | {string(), pid()}) -&gt; ok</tt><br></p>
+<p> </p>
 </div><p>
   <h4><a name="Close_a_cowboy1_websocket_connection.">Close a cowboy1 websocket connection.</a></h4>
   Use the Pid from cloudi_service_handle_request/11.  Otherwise, you can
@@ -46,16 +47,19 @@
 <h3 class="function"><a name="cloudi_service_handle_info-3">cloudi_service_handle_info/3</a></h3>
 <div class="spec">
 <p><tt>cloudi_service_handle_info(Request, State, Dispatcher) -&gt; any()</tt></p>
+<p> </p>
 </div>
 
 <h3 class="function"><a name="cloudi_service_init-4">cloudi_service_init/4</a></h3>
 <div class="spec">
 <p><tt>cloudi_service_init(Args, Prefix, Timeout, Dispatcher) -&gt; any()</tt></p>
+<p> </p>
 </div>
 
 <h3 class="function"><a name="cloudi_service_terminate-3">cloudi_service_terminate/3</a></h3>
 <div class="spec">
 <p><tt>cloudi_service_terminate(Reason, Timeout, State) -&gt; any()</tt></p>
+<p> </p>
 </div>
 <hr>
 
