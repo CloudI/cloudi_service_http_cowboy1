@@ -6,7 +6,7 @@ defmodule CloudIServiceHttpCowboy do
 
   def project do
     [app: :cloudi_service_http_cowboy1,
-     version: "2.0.2",
+     version: "2.0.3",
      language: :erlang,
      erlc_options: [
        :debug_info,
@@ -29,8 +29,8 @@ defmodule CloudIServiceHttpCowboy do
   end
 
   defp deps do
-    [{:cowboy, "~> 1.1.2"},
-     {:cloudi_core, "~> 2.0.2"}]
+    [{:cowboy, "~> 1.1.2", app: false},
+     {:cloudi_core, "~> 2.0.3", app: false}]
   end
 
   defp description do
